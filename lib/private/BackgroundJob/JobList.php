@@ -333,4 +333,25 @@ class JobList implements IJobList {
 			->where($query->expr()->eq('id', $query->createNamedParameter($job->getId(), IQueryBuilder::PARAM_INT)));
 		$query->execute();
 	}
+
+	/**
+	 * checks if a job is still running (reserved_at time is smaller than 12 hours ago)
+	 *
+	 * @return bool
+	 */
+	public function isAnyJobRunning(): bool {
+		$query = $this->connection->getQueryBuilder();
+		$query->select('*')
+			->from('jobs')
+			->where($query->expr()->gt('reserved_at', $query->createNamedParameter($this->timeFactory->getTime() - 12 * 3600, IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+		$result = $query->execute();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row) {
+			return true;
+		}
+		return false;
+	}
 }
